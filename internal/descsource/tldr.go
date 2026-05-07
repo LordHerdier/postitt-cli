@@ -49,6 +49,10 @@ func (t *Tldr) Page(ctx context.Context, name string) (string, error) {
 // fetch runs tldr and returns its raw stdout, or ErrNotFound on any failure.
 // We deliberately collapse all error cases into ErrNotFound — the preview
 // pane should never block or surface tldr-internal errors.
+//
+// No --color flag is passed: when stdout is a pipe the tldr client strips
+// ANSI codes by default. (The -c/--color flag on tldr 3.x *enables* color,
+// the opposite of what "--color=never" implies, so we omit it entirely.)
 func (t *Tldr) fetch(name string) ([]byte, error) {
 	if name == "" {
 		return nil, ErrNotFound
@@ -60,7 +64,7 @@ func (t *Tldr) fetch(name string) ([]byte, error) {
 	if _, err := exec.LookPath(bin); err != nil {
 		return nil, ErrNotFound
 	}
-	out, err := runWithTimeout(2*time.Second, bin, "--color=never", name)
+	out, err := runWithTimeout(2*time.Second, bin, name)
 	if err != nil {
 		// Any error (including non-zero exit when no page exists) is
 		// treated as "no description for this command."
@@ -69,74 +73,94 @@ func (t *Tldr) fetch(name string) ([]byte, error) {
 	return out, nil
 }
 
-// extractTldrSummary pulls the first line beginning with "> " from tldr
-// output and strips the prefix. tldr pages start with:
+// extractTldrSummary pulls the brief description from tldr output.
 //
-//   # command-name
+// tldr client 3.x (spec 2.x) produces plain indented text:
 //
-//   > Brief description.
-//   > Possibly continued onto a second line.
+//	  command-name
+//	  Description sentence.  See also: `x`.  More information: URL.
+//	  - Example:    command
 //
-// We return the first such line, with a period appended if missing.
+// We skip the first non-blank line (the command name), then return the first
+// sentence of the next non-blank line, stripping trailing "  See also: ..." and
+// "  More information: ..." clauses that are separated by double-spaces.
 func extractTldrSummary(text string) string {
 	scanner := bufio.NewScanner(strings.NewReader(text))
+	first := true
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		if !strings.HasPrefix(line, "> ") {
+		if line == "" {
 			continue
 		}
-		summary := strings.TrimPrefix(line, "> ")
-		summary = strings.TrimSpace(summary)
-		// Some pages put a "More information:" link in a > line; skip those.
-		if strings.HasPrefix(strings.ToLower(summary), "more information") {
-			continue
+		if first {
+			first = false
+			continue // command name header — skip it
 		}
-		if summary != "" && !strings.HasSuffix(summary, ".") {
-			summary += "."
-		}
-		return summary
+		return tldrFirstSentence(line)
 	}
 	return ""
 }
 
-// cleanTldrPage returns the tldr page body with light cosmetic adjustments
-// suitable for embedding inside the preview pane:
+// tldrFirstSentence returns the first sentence of a tldr description line by
+// cutting at the first double-space boundary (which separates clauses like
+// "See also: ..." and "More information: ...").
+func tldrFirstSentence(line string) string {
+	if i := strings.Index(line, "  "); i > 0 {
+		line = line[:i]
+	}
+	line = strings.TrimSpace(line)
+	if line == "" {
+		return ""
+	}
+	if !strings.HasSuffix(line, ".") {
+		line += "."
+	}
+	return line
+}
+
+// cleanTldrPage returns the tldr page body adjusted for the preview pane.
 //
-//   - The leading `# command-name` header is dropped (the command name is
-//     already shown above in the COMMAND field).
-//   - The "More information:" footer line and its preceding blank line
-//     are dropped (it points to a URL the user can't click in the pane).
+// tldr client 3.x (spec 2.x) format:
+//
+//	  command-name
+//	  Description.  See also: `x`.  More information: URL.
+//	  - Example:    command
+//
+// Adjustments made:
+//   - The first non-blank line (the command name) is dropped — it's already
+//     shown in the COMMAND field above.
+//   - On the description line, "  See also: ..." and "  More information: ..."
+//     trailing clauses are stripped (URLs aren't clickable in the pane).
 //   - Leading and trailing blank lines are trimmed.
-//
-// Otherwise the page is preserved verbatim — example commands stay rendered
-// as fenced backticks, descriptions stay in their `> ` form, etc.
 func cleanTldrPage(text string) string {
 	lines := strings.Split(text, "\n")
 
-	// Drop the first non-blank line if it's a `# header`.
+	// Drop the first non-blank line (command name header).
+	for i, l := range lines {
+		if strings.TrimSpace(l) == "" {
+			continue
+		}
+		lines = append(lines[:i], lines[i+1:]...)
+		break
+	}
+
+	// On the description line (now the first non-blank line), strip the
+	// "  See also: ..." and "  More information: ..." trailing clauses.
 	for i, l := range lines {
 		t := strings.TrimSpace(l)
 		if t == "" {
 			continue
 		}
-		if strings.HasPrefix(t, "# ") {
-			lines = append(lines[:i], lines[i+1:]...)
+		if idx := strings.Index(t, "  More information:"); idx >= 0 {
+			t = strings.TrimSpace(t[:idx])
 		}
+		if idx := strings.Index(t, "  See also:"); idx >= 0 {
+			t = strings.TrimSpace(t[:idx])
+		}
+		// Re-apply the original leading whitespace.
+		indent := len(l) - len(strings.TrimLeft(l, " \t"))
+		lines[i] = l[:indent] + t
 		break
-	}
-
-	// Drop "More information:" line and any immediately preceding blanks.
-	for i := len(lines) - 1; i >= 0; i-- {
-		t := strings.TrimSpace(lines[i])
-		if strings.HasPrefix(strings.ToLower(t), "> more information") {
-			// Trim this line and any blank lines just before it.
-			cut := i
-			for cut > 0 && strings.TrimSpace(lines[cut-1]) == "" {
-				cut--
-			}
-			lines = append(lines[:cut], lines[i+1:]...)
-			break
-		}
 	}
 
 	out := strings.Join(lines, "\n")

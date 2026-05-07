@@ -6,36 +6,26 @@ import (
 )
 
 func TestCleanTldrPage(t *testing.T) {
-	in := `# git stash
+	// tldr client 3.x (spec 2.x) plain-text format.
+	in := "  git stash\n" +
+		"  Stash local Git changes in a temporary area.  More information: <https://git-scm.com/docs/git-stash>.\n" +
+		"  - Stash current changes, except new (untracked) files:    git stash push -m message\n" +
+		"  - Stash current changes, including new (untracked) files:    git stash -u\n" +
+		"  - Show the changes as a diff:    git stash show -p\n"
 
-> Stash local Git changes in a temporary area.
-> More information: <https://git-scm.com/docs/git-stash>.
-
-- Stash current changes, except new (untracked) files:
-
-` + "`git stash [push -m {{optional_stash_message}}]`" + `
-
-- Stash current changes, including new (untracked) files:
-
-` + "`git stash -u`" + `
-
-- Show the changes as a diff:
-
-` + "`git stash show -p`" + `
-`
 	got := cleanTldrPage(in)
 
-	// The leading `# git stash` should be gone.
-	if strings.Contains(got, "# git stash") {
-		t.Errorf("expected `# git stash` header to be stripped, got:\n%s", got)
+	// The command name header should be gone.
+	if strings.Contains(got, "git stash\n") && strings.HasPrefix(got, "  git stash") {
+		t.Errorf("expected command name header to be stripped, got:\n%s", got)
 	}
-	// The "More information:" line should be gone.
+	// The "More information:" clause should be gone.
 	if strings.Contains(got, "More information") {
-		t.Errorf("expected More information line to be stripped, got:\n%s", got)
+		t.Errorf("expected More information clause to be stripped, got:\n%s", got)
 	}
-	// The summary `> Stash...` line should still be there.
+	// The description should still be there.
 	if !strings.Contains(got, "Stash local Git changes") {
-		t.Errorf("expected summary to be preserved, got:\n%s", got)
+		t.Errorf("expected description to be preserved, got:\n%s", got)
 	}
 	// Examples should still be there.
 	if !strings.Contains(got, "git stash -u") {
@@ -50,19 +40,45 @@ func TestCleanTldrPage(t *testing.T) {
 	}
 }
 
-func TestCleanTldrPage_NoHeaderAndNoFooter(t *testing.T) {
-	// Some pages might not have either; we should handle that gracefully.
-	in := `> Some description.
+func TestCleanTldrPage_SeeAlsoStripped(t *testing.T) {
+	in := "  find\n" +
+		"  Find files recursively.  See also: `fd`.  More information: https://manned.org/find.\n" +
+		"  - Find files by extension:    find path -name '*.ext'\n"
 
-- Some example:
-
-` + "`some-cmd`"
 	got := cleanTldrPage(in)
-	if !strings.Contains(got, "Some description") {
-		t.Errorf("description lost: %s", got)
+	if strings.Contains(got, "See also") {
+		t.Errorf("expected See also clause to be stripped, got:\n%s", got)
 	}
-	if !strings.Contains(got, "some-cmd") {
-		t.Errorf("example lost: %s", got)
+	if strings.Contains(got, "More information") {
+		t.Errorf("expected More information clause to be stripped, got:\n%s", got)
+	}
+	if !strings.Contains(got, "Find files recursively") {
+		t.Errorf("expected description to be preserved, got:\n%s", got)
+	}
+	if !strings.Contains(got, "find path") {
+		t.Errorf("expected example to be preserved, got:\n%s", got)
+	}
+}
+
+func TestExtractTldrSummary(t *testing.T) {
+	in := "  git stash\n" +
+		"  Stash local Git changes in a temporary area.  More information: https://git-scm.com/docs/git-stash.\n" +
+		"  - Example:    git stash\n"
+	got := extractTldrSummary(in)
+	want := "Stash local Git changes in a temporary area."
+	if got != want {
+		t.Errorf("extractTldrSummary = %q, want %q", got, want)
+	}
+}
+
+func TestExtractTldrSummary_SeeAlso(t *testing.T) {
+	in := "  find\n" +
+		"  Find files recursively.  See also: `fd`.  More information: https://manned.org/find.\n" +
+		"  - Example:    find path -name '*.ext'\n"
+	got := extractTldrSummary(in)
+	want := "Find files recursively."
+	if got != want {
+		t.Errorf("extractTldrSummary = %q, want %q", got, want)
 	}
 }
 
