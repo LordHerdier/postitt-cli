@@ -3,7 +3,12 @@
 A fast personal command reference. Picker over commands you've saved, with
 tags, auto-generated descriptions from tldr/man, and shell history capture.
 
-A rewrite of the bash original, in Go.
+A rewrite of the bash/python [cheatshh](https://github.com/AnirudhG07/cheatshh) in Go.
+
+
+> THIS PROJECT IS VIBECODED. USE AT YOUR OWN RISK.<br>
+> While everything works properly and I have personally tested everything end-to-end, I cannot guarantee code quality.<br>
+> _something something There Be Dragons_
 
 ## Install
 
