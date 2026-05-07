@@ -1,17 +1,17 @@
-// Command cheatshh is a personal command reference: a fast picker for
+// Command postitt is a personal command reference: a fast picker for
 // commands you've saved, replacing sticky notes above your desk.
 //
 // Subcommand overview:
-//   cheatshh                 picker -> copy to clipboard (default action)
-//   cheatshh print           picker -> stdout (for $(cheatshh print))
-//   cheatshh add CMD         add directly with -d/-t flags
-//   cheatshh save [N|-N]     capture from shell history, auto-fill desc
-//   cheatshh ls [--tag X]    list, optionally filtered
-//   cheatshh tags            list all tags with counts
-//   cheatshh tag ID +x -y    add/remove tags
-//   cheatshh edit ID         open in $EDITOR
-//   cheatshh rm ID [-f]      delete
-//   cheatshh pin/unpin ID    bookmark
+//   postitt                 picker -> copy to clipboard (default action)
+//   postitt print           picker -> stdout (for $(postitt print))
+//   postitt add CMD         add directly with -d/-t flags
+//   postitt save [N|-N]     capture from shell history, auto-fill desc
+//   postitt ls [--tag X]    list, optionally filtered
+//   postitt tags            list all tags with counts
+//   postitt tag ID +x -y    add/remove tags
+//   postitt edit ID         open in $EDITOR
+//   postitt rm ID [-f]      delete
+//   postitt pin/unpin ID    bookmark
 package main
 
 import (
@@ -21,9 +21,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/charlotte/cheatshh/internal/clipboard"
-	"github.com/charlotte/cheatshh/internal/picker"
-	"github.com/charlotte/cheatshh/internal/store"
+	"github.com/LordHerdier/postitt-cli/internal/clipboard"
+	"github.com/LordHerdier/postitt-cli/internal/picker"
+	"github.com/LordHerdier/postitt-cli/internal/store"
 )
 
 // version is overridden at build time via -ldflags "-X main.version=...".
@@ -41,9 +41,9 @@ func newRootCmd() *cobra.Command {
 	var dbPath string
 
 	root := &cobra.Command{
-		Use:   "cheatshh",
+		Use:   "postitt",
 		Short: "Personal command reference and picker",
-		Long: `cheatshh is a fast picker for commands you've saved, with tags,
+		Long: `postitt is a fast picker for commands you've saved, with tags,
 auto-generated descriptions from tldr/man, and shell history capture.
 
 Run with no arguments to open the picker; selected commands are copied to
@@ -64,7 +64,7 @@ print, Ctrl-B to bookmark.`,
 	}
 
 	root.PersistentFlags().StringVar(&dbPath, "db", "",
-		"path to cheatshh.db (default: $XDG_DATA_HOME/cheatshh/cheatshh.db)")
+		"path to postitt.db (default: $XDG_DATA_HOME/postitt/postitt.db)")
 
 	root.AddCommand(
 		newAddCmd(&dbPath),
@@ -111,15 +111,15 @@ func runPicker(s *store.Store, action pickAction) error {
 	}
 	if len(cmds) == 0 {
 		fmt.Fprintln(os.Stderr,
-			"no commands saved yet — try 'cheatshh add' or 'cheatshh save'")
+			"no commands saved yet — try 'postitt add' or 'postitt save'")
 		return nil
 	}
 
 	selfExec, err := os.Executable()
 	if err != nil {
-		// Fall back to "cheatshh" on $PATH; this is fine as long as the user
+		// Fall back to "postitt" on $PATH; this is fine as long as the user
 		// installed it normally. Only matters for the bind callbacks.
-		selfExec = "cheatshh"
+		selfExec = "postitt"
 	}
 
 	res, err := picker.Run(cmds, selfExec)
@@ -130,7 +130,7 @@ func runPicker(s *store.Store, action pickAction) error {
 		return nil
 	}
 
-	// If the caller forced a specific action (e.g. `cheatshh print`), respect
+	// If the caller forced a specific action (e.g. `postitt print`), respect
 	// that over whatever key was pressed. The picker still allows ctrl-e/p
 	// override though, so we only override when the caller asked for print.
 	chosen := res.Action
@@ -153,7 +153,7 @@ func runPicker(s *store.Store, action pickAction) error {
 		}
 		fmt.Fprintf(os.Stderr, "✓ Copied: %s\n", oneLineDisplay(res.Command.Command))
 	case picker.ActionPrint:
-		// Important: print to stdout so it can be captured via $(cheatshh ...).
+		// Important: print to stdout so it can be captured via $(postitt ...).
 		fmt.Print(res.Command.Command)
 	case picker.ActionExec:
 		return execCommand(res.Command.Command)

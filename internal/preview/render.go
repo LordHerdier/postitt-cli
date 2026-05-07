@@ -1,5 +1,5 @@
 // Package preview renders the right-hand pane shown by fzf when a command is
-// highlighted in the picker. fzf calls `cheatshh _preview <id>` once per
+// highlighted in the picker. fzf calls `postitt _preview <id>` once per
 // highlight change, which executes Render with a freshly opened store.
 package preview
 
@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charlotte/cheatshh/internal/descsource"
-	"github.com/charlotte/cheatshh/internal/store"
+	"github.com/LordHerdier/postitt-cli/internal/descsource"
+	"github.com/LordHerdier/postitt-cli/internal/store"
 )
 
 // ANSI color codes. Kept minimal and standard so the output looks reasonable

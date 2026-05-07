@@ -1,5 +1,5 @@
 // Package pickerstate manages a tiny scratch file used to share state
-// between a running picker (fzf) and the cheatshh helper subprocesses it
+// between a running picker (fzf) and the postitt helper subprocesses it
 // invokes via --bind callbacks.
 //
 // The state lives at a temp path keyed by the parent picker process ID,
@@ -21,7 +21,7 @@ import (
 	"sync"
 )
 
-// envVar is the name of the environment variable cheatshh sets when
+// envVar is the name of the environment variable postitt sets when
 // launching fzf, so subprocess helpers know where to find session state.
 // Using an env var rather than a fixed path means concurrent pickers
 // don't collide and stale files don't get picked up by new sessions.
@@ -36,7 +36,7 @@ var pathLock sync.Mutex
 // the path. The caller (the picker) is responsible for setting the env
 // var on the fzf subprocess and for cleanup with Cleanup().
 func New() (string, error) {
-	dir := filepath.Join(os.TempDir(), "cheatshh")
+	dir := filepath.Join(os.TempDir(), "postitt")
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return "", fmt.Errorf("create session dir: %w", err)
 	}
@@ -67,7 +67,7 @@ func Path() string {
 	return os.Getenv(envVar)
 }
 
-// EnvVar returns the name of the env var cheatshh sets to communicate
+// EnvVar returns the name of the env var postitt sets to communicate
 // the session path to subprocesses. Exposed so the picker can set it
 // when launching fzf.
 func EnvVar() string {

@@ -1,5 +1,5 @@
 -- 0001_init.sql
--- Initial schema for cheatshh.
+-- Initial schema for postitt.
 
 CREATE TABLE IF NOT EXISTS commands (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -34,7 +34,7 @@ CREATE INDEX IF NOT EXISTS idx_command_tags_tag
     ON command_tags(tag_id);
 
 -- FTS5 over command + description for fuzzy search outside of fzf
--- (fzf does its own matching; this is for `cheatshh ls --search "..."` etc.)
+-- (fzf does its own matching; this is for `postitt ls --search "..."` etc.)
 CREATE VIRTUAL TABLE IF NOT EXISTS commands_fts USING fts5(
     command, description, content='commands', content_rowid='id'
 );

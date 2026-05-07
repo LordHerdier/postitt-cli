@@ -252,7 +252,7 @@ func (s *Store) RecordUse(id int64) error {
 }
 
 // AutoFillable returns commands whose description is blank and which were
-// flagged for retry. Useful for a future `cheatshh sync-descriptions`.
+// flagged for retry. Useful for a future `postitt sync-descriptions`.
 func (s *Store) AutoFillable() ([]*Command, error) {
 	rows, err := s.db.Query(
 		`SELECT id, command, description, bookmarked, use_count, last_used,

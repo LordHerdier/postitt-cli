@@ -13,13 +13,13 @@ import (
 //go:embed migrations/*.sql
 var migrationsFS embed.FS
 
-// Store wraps a SQLite connection and provides typed access to cheatshh data.
+// Store wraps a SQLite connection and provides typed access to postitt data.
 type Store struct {
 	db *sql.DB
 }
 
 // Open returns a Store backed by the SQLite database at path. If path is empty,
-// the default location ($XDG_DATA_HOME/cheatshh/cheatshh.db) is used. The
+// the default location ($XDG_DATA_HOME/postitt/postitt.db) is used. The
 // database file and any parent directories are created if missing, and
 // migrations are applied.
 func Open(path string) (*Store, error) {
@@ -56,17 +56,17 @@ func (s *Store) Close() error {
 	return s.db.Close()
 }
 
-// defaultDBPath resolves $XDG_DATA_HOME/cheatshh/cheatshh.db, falling back to
-// ~/.local/share/cheatshh/cheatshh.db.
+// defaultDBPath resolves $XDG_DATA_HOME/postitt/postitt.db, falling back to
+// ~/.local/share/postitt/postitt.db.
 func defaultDBPath() (string, error) {
 	if x := os.Getenv("XDG_DATA_HOME"); x != "" {
-		return filepath.Join(x, "cheatshh", "cheatshh.db"), nil
+		return filepath.Join(x, "postitt", "postitt.db"), nil
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("locate home dir: %w", err)
 	}
-	return filepath.Join(home, ".local", "share", "cheatshh", "cheatshh.db"), nil
+	return filepath.Join(home, ".local", "share", "postitt", "postitt.db"), nil
 }
 
 // migrate applies all embedded migration files in lexicographic order.

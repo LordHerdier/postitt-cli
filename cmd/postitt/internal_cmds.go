@@ -10,18 +10,18 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/charlotte/cheatshh/internal/picker"
-	"github.com/charlotte/cheatshh/internal/pickerstate"
-	"github.com/charlotte/cheatshh/internal/preview"
-	"github.com/charlotte/cheatshh/internal/store"
+	"github.com/LordHerdier/postitt-cli/internal/picker"
+	"github.com/LordHerdier/postitt-cli/internal/pickerstate"
+	"github.com/LordHerdier/postitt-cli/internal/preview"
+	"github.com/LordHerdier/postitt-cli/internal/store"
 )
 
 // These four commands are not user-facing. They're invoked by fzf bindings
-// via subprocess calls back into the cheatshh binary. We mark them Hidden so
-// they don't show up in `cheatshh --help`, but they're regular cobra commands
+// via subprocess calls back into the postitt binary. We mark them Hidden so
+// they don't show up in `postitt --help`, but they're regular cobra commands
 // so they pick up the same --db flag and exit-code conventions.
 
-// newPreviewCmd: `cheatshh _preview ID` — render the right-hand pane for
+// newPreviewCmd: `postitt _preview ID` — render the right-hand pane for
 // the highlighted command. Called by fzf via --preview on every change in
 // the highlighted row.
 func newPreviewCmd(dbPath *string) *cobra.Command {
@@ -51,7 +51,7 @@ func newPreviewCmd(dbPath *string) *cobra.Command {
 	}
 }
 
-// newListInternalCmd: `cheatshh _list` — emit the picker's input format on
+// newListInternalCmd: `postitt _list` — emit the picker's input format on
 // stdout. Used by fzf's reload action after an in-place mutation, and on
 // every prompt change. Honors the active tag filter from picker session
 // state if one is set.
@@ -87,7 +87,7 @@ func newListInternalCmd(dbPath *string) *cobra.Command {
 	}
 }
 
-// newToggleBookmarkCmd: `cheatshh _toggle-bookmark ID` — flip the bookmark
+// newToggleBookmarkCmd: `postitt _toggle-bookmark ID` — flip the bookmark
 // state. Bound to Ctrl-B in the picker; output is suppressed (execute-silent)
 // so the picker UI isn't disturbed.
 func newToggleBookmarkCmd(dbPath *string) *cobra.Command {
@@ -115,7 +115,7 @@ func newToggleBookmarkCmd(dbPath *string) *cobra.Command {
 	}
 }
 
-// newConfirmDeleteCmd: `cheatshh _confirm-delete ID` — prompt for y/N then
+// newConfirmDeleteCmd: `postitt _confirm-delete ID` — prompt for y/N then
 // delete. Bound to Ctrl-X in the picker. fzf's `execute` action gives us a
 // real TTY here so the prompt works. After we exit, fzf reloads the list.
 func newConfirmDeleteCmd(dbPath *string) *cobra.Command {
@@ -167,7 +167,7 @@ func newConfirmDeleteCmd(dbPath *string) *cobra.Command {
 	}
 }
 
-// newPickTagCmd: `cheatshh _pick-tag` — open a sub-fzf over the tag list
+// newPickTagCmd: `postitt _pick-tag` — open a sub-fzf over the tag list
 // and append the user's choice to the session's tag filter. Bound to
 // Alt-T in the main picker.
 //
@@ -245,7 +245,7 @@ func newPickTagCmd(dbPath *string) *cobra.Command {
 	}
 }
 
-// newClearFilterCmd: `cheatshh _clear-filter` — remove all active tag
+// newClearFilterCmd: `postitt _clear-filter` — remove all active tag
 // filters from the session. Bound to Alt-A in the main picker.
 func newClearFilterCmd() *cobra.Command {
 	return &cobra.Command{
@@ -261,14 +261,14 @@ func newClearFilterCmd() *cobra.Command {
 	}
 }
 
-// newPromptCmd: `cheatshh _prompt` — emit the prompt string for fzf's
+// newPromptCmd: `postitt _prompt` — emit the prompt string for fzf's
 // transform-prompt action. Includes the active tag filter when one is set
 // so the user can see what's narrowing the list.
 //
 // Examples of output:
-//   "cheatshh> "                no filter
-//   "cheatshh [git]> "          single tag
-//   "cheatshh [git+stash]> "    multiple tags (AND)
+//   "postitt> "                no filter
+//   "postitt [git]> "          single tag
+//   "postitt [git+stash]> "    multiple tags (AND)
 func newPromptCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:    "_prompt",
@@ -276,16 +276,16 @@ func newPromptCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			tags, err := pickerstate.TagFilter(pickerstate.Path())
 			if err != nil || len(tags) == 0 {
-				fmt.Print("cheatshh> ")
+				fmt.Print("postitt> ")
 				return nil
 			}
-			fmt.Printf("cheatshh [%s]> ", strings.Join(tags, "+"))
+			fmt.Printf("postitt [%s]> ", strings.Join(tags, "+"))
 			return nil
 		},
 	}
 }
 
-// newManCmd: `cheatshh _man ID` — open the man page for the highlighted
+// newManCmd: `postitt _man ID` — open the man page for the highlighted
 // command's base program (e.g. "git" for `git stash pop`). Bound to Alt-M
 // in the picker. Runs `man` directly so the user gets their normal pager
 // behavior; on quit, fzf redraws and we're back at the picker.

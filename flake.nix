@@ -1,5 +1,5 @@
 {
-  description = "cheatshh — fast personal command reference / picker";
+  description = "postitt — fast personal command reference / picker";
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
@@ -17,7 +17,7 @@
       in
       {
         packages.default = pkgs.buildGoModule {
-          pname = "cheatshh";
+          pname = "postitt";
           version = "0.1.0";
           src = ./.;
           # Run nix build once with vendorHash = pkgs.lib.fakeHash,
@@ -27,8 +27,8 @@
           env.CGO_ENABLED = "0";
           meta = {
             description = "Personal command reference: a fast picker for saved commands";
-            homepage = "https://github.com/charlotte/cheatshh";
-            mainProgram = "cheatshh";
+            homepage = "https://github.com/LordHerdier/postitt-cli";
+            mainProgram = "postitt";
           };
         };
         devShells.default = pkgs.mkShell {

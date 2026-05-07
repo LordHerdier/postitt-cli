@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Notes for future agents working on cheatshh. Read this first; it'll save you
+Notes for future agents working on postitt. Read this first; it'll save you
 backtracking from wrong assumptions.
 
 ## What this is
@@ -19,7 +19,7 @@ interactive use.
 
 ## Architecture in one paragraph
 
-`cmd/cheatshh/` has cobra wiring; `internal/store/` is SQLite with embedded
+`cmd/postitt/` has cobra wiring; `internal/store/` is SQLite with embedded
 migrations; `internal/picker/` shells out to `fzf` and parses its output;
 `internal/preview/` formats the right-hand fzf pane; `internal/descsource/`
 looks up command descriptions from `tldr` and `man`; `internal/shellhist/`
@@ -42,11 +42,11 @@ subprocess. fzf has two relevant features:
   open man page) where the picker should stay open.
 
 For the bind callbacks, we pass `os.Executable()` into the bind string and
-fzf invokes cheatshh recursively with hidden `_subcommand` arguments. So
-when you press Ctrl-B, fzf forks `cheatshh _toggle-bookmark <id>`, then
-`cheatshh _list` to refresh.
+fzf invokes postitt recursively with hidden `_subcommand` arguments. So
+when you press Ctrl-B, fzf forks `postitt _toggle-bookmark <id>`, then
+`postitt _list` to refresh.
 
-**Hidden subcommands you'll find in `cmd/cheatshh/internal_cmds.go`:**
+**Hidden subcommands you'll find in `cmd/postitt/internal_cmds.go`:**
 
 | Subcommand              | Bound to     | What it does                              |
 | ----------------------- | ------------ | ----------------------------------------- |
@@ -65,7 +65,7 @@ picker session and aren't safe to call directly.
 
 ## The pickerstate session file
 
-When the picker starts, it creates `$TMPDIR/cheatshh/session-<pid>` and sets
+When the picker starts, it creates `$TMPDIR/postitt/session-<pid>` and sets
 `$CHEATSHH_SESSION=<path>` on the fzf subprocess. fzf inherits that env;
 when fzf forks a binding callback, the callback inherits it too. The
 callback reads/writes the file via `pickerstate.{Get,Set,Add,Clear}TagFilter`.
@@ -74,7 +74,7 @@ Currently the only state stored is the active tag filter (one tag per line).
 **If you add more state, extend `pickerstate` rather than parallel files** —
 single source of truth keeps cleanup correct. The picker's `defer
 pickerstate.Cleanup(path)` removes the file on exit; if the picker crashes,
-the file leaks at `$TMPDIR/cheatshh/session-<pid>` until reboot. That's
+the file leaks at `$TMPDIR/postitt/session-<pid>` until reboot. That's
 acceptable; don't add a cleanup-orphans-on-startup pass without a reason.
 
 ## Database
@@ -87,15 +87,15 @@ flake.
 Schema is in `internal/store/migrations/0001_init.sql`. Three tables:
 `commands`, `tags`, `command_tags` (many-to-many). FTS5 virtual table
 `commands_fts` exists but is **not currently wired** — it's there so a
-future `--search` flag on `cheatshh ls` is a one-liner.
+future `--search` flag on `postitt ls` is a one-liner.
 
 Migrations are embedded via `go:embed` and tracked in a `schema_migrations`
 table. To add a migration, drop a new `0002_*.sql` file in the migrations
 dir; it'll auto-apply on next open. Don't edit `0001_init.sql` after the
 fact — make a new migration that alters.
 
-The user's DB lives at `$XDG_DATA_HOME/cheatshh/cheatshh.db` (or
-`~/.local/share/cheatshh/cheatshh.db`). The `--db` flag overrides it for
+The user's DB lives at `$XDG_DATA_HOME/postitt/postitt.db` (or
+`~/.local/share/postitt/postitt.db`). The `--db` flag overrides it for
 tests/dev.
 
 ## Conventions worth following
@@ -122,7 +122,7 @@ not what the user wants.
 
 Three test files exist:
 
-- `cmd/cheatshh/commands_test.go` — `parseEditBuffer` (TOML-ish $EDITOR format)
+- `cmd/postitt/commands_test.go` — `parseEditBuffer` (TOML-ish $EDITOR format)
 - `internal/pickerstate/pickerstate_test.go` — session file lifecycle
 - `internal/descsource/descsource_test.go` — tldr cleanup, man excerpt extraction
 
@@ -149,7 +149,7 @@ The user is on NixOS. The flake is `flake.nix`; `nix build` produces a
 static binary. `vendorHash` in the flake needs updating if `go.sum` changes
 materially — the user knows the dance.
 
-For local dev outside Nix, `go install ./cmd/cheatshh` works.
+For local dev outside Nix, `go install ./cmd/postitt` works.
 
 ## Foot-guns and surprises
 
@@ -159,9 +159,9 @@ For local dev outside Nix, `go install ./cmd/cheatshh` works.
   helpers handle the collapse; **don't reach for `strings.ReplaceAll(s,
   "\n", " ")` directly** — use the helper.
 
-- **`cheatshh save` with no args** intentionally skips cheatshh invocations
+- **`postitt save` with no args** intentionally skips postitt invocations
   in history (otherwise it would always save itself). `save -N` is explicit
-  and skips the filtering. See `pickFromHistory` in `cmd/cheatshh/commands.go`.
+  and skips the filtering. See `pickFromHistory` in `cmd/postitt/commands.go`.
 
 - **bash multi-line history** is broken-by-design at the shell level. bash
   flattens multi-line input into one line on save unless `shopt -s lithist`
@@ -177,13 +177,13 @@ For local dev outside Nix, `go install ./cmd/cheatshh` works.
 - **The `tldr`/`man` lookup in the preview pane runs on every highlight
   change.** No caching yet. At ~50–500ms per render this is fine in
   practice but is the obvious thing to optimize if the user reports lag.
-  The cache approach is sketched in chat history: `~/.cache/cheatshh/
+  The cache approach is sketched in chat history: `~/.cache/postitt/
   preview/<id>.txt`, regenerated lazily on first miss or when `updated_at`
   changes. **Don't add it preemptively** — invalidation logic is a
   liability without a real perf complaint to justify it.
 
 - **Tags are AND-combined when filtering**, not OR. Multiple `--tag`
-  flags on `cheatshh ls`, or multiple Alt-T selections in the picker,
+  flags on `postitt ls`, or multiple Alt-T selections in the picker,
   narrow the result. This was a deliberate design choice; if a user
   asks for OR, push back before implementing — it's almost always
   better expressed as a broader tag.
@@ -205,7 +205,7 @@ cycles re-pitching them:
   Don't bring it back.
 
 - **Whiptail/dialog-driven add wizard**: the user found this annoying
-  in the original. `cheatshh add` is flag-driven; `cheatshh save`
+  in the original. `postitt add` is flag-driven; `postitt save`
   prompts inline.
 
 - **Local web UI / electron / React anything**: terminal only.

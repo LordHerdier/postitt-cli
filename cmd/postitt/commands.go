@@ -11,12 +11,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/charlotte/cheatshh/internal/descsource"
-	"github.com/charlotte/cheatshh/internal/shellhist"
-	"github.com/charlotte/cheatshh/internal/store"
+	"github.com/LordHerdier/postitt-cli/internal/descsource"
+	"github.com/LordHerdier/postitt-cli/internal/shellhist"
+	"github.com/LordHerdier/postitt-cli/internal/store"
 )
 
-// newAddCmd: `cheatshh add CMD [-d "desc"] [-t tag1,tag2]`
+// newAddCmd: `postitt add CMD [-d "desc"] [-t tag1,tag2]`
 func newAddCmd(dbPath *string) *cobra.Command {
 	var desc string
 	var tagsRaw string
@@ -26,10 +26,10 @@ func newAddCmd(dbPath *string) *cobra.Command {
 		Short: "Add a new command directly",
 		Long: `Add a command to the database. Description and tags can be passed via
 flags; without flags, the command is added with no description and no tags
-(you can edit later with 'cheatshh edit ID').
+(you can edit later with 'postitt edit ID').
 
 Example:
-  cheatshh add 'git stash pop' -d "restore most recent stash" -t git,stash`,
+  postitt add 'git stash pop' -d "restore most recent stash" -t git,stash`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := store.Open(*dbPath)
@@ -41,7 +41,7 @@ Example:
 			id, err := s.Add(args[0], desc, store.ParseTags(tagsRaw), false)
 			if err != nil {
 				if errors.Is(err, store.ErrDuplicate) {
-					return fmt.Errorf("command already exists; use 'cheatshh edit' or 'cheatshh rm' first")
+					return fmt.Errorf("command already exists; use 'postitt edit' or 'postitt rm' first")
 				}
 				return err
 			}
@@ -54,18 +54,18 @@ Example:
 	return cmd
 }
 
-// newSaveCmd: `cheatshh save [N|-N]` — capture from shell history.
+// newSaveCmd: `postitt save [N|-N]` — capture from shell history.
 //
 // Forms:
-//   cheatshh save        -> save the most recent NON-cheatshh command
-//                           (skips the `cheatshh save` invocation itself,
-//                            plus any preceding cheatshh commands)
-//   cheatshh save -1     -> save the literal last entry (no filtering;
-//                           usually that's `cheatshh save` itself, which
+//   postitt save        -> save the most recent NON-postitt command
+//                           (skips the `postitt save` invocation itself,
+//                            plus any preceding postitt commands)
+//   postitt save -1     -> save the literal last entry (no filtering;
+//                           usually that's `postitt save` itself, which
 //                           is rarely what you want, but allowed as escape
 //                           hatch for testing or unusual workflows)
-//   cheatshh save -3     -> save the third-most-recent entry, no filtering
-//   cheatshh save 5      -> picker over the last 5 commands [TODO]
+//   postitt save -3     -> save the third-most-recent entry, no filtering
+//   postitt save 5      -> picker over the last 5 commands [TODO]
 func newSaveCmd(dbPath *string) *cobra.Command {
 	var desc string
 	var tagsRaw string
@@ -77,7 +77,7 @@ func newSaveCmd(dbPath *string) *cobra.Command {
 		Long: `Capture a recent command from your shell's history. Detects zsh, bash,
 and fish automatically (override with $CHEATSHH_SHELL).
 
-If the description is left blank, cheatshh will try to auto-fill it from
+If the description is left blank, postitt will try to auto-fill it from
 tldr (preferred) or man.`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -89,7 +89,7 @@ tldr (preferred) or man.`,
 			// Distinguish "user gave an explicit offset" from "no args, find
 			// the right thing to save." Explicit -N is taken at face value,
 			// no filtering. Implicit (no args) walks back from the most
-			// recent and skips cheatshh invocations.
+			// recent and skips postitt invocations.
 			explicit := false
 			offset := 1
 			if len(args) == 1 {
@@ -109,7 +109,7 @@ tldr (preferred) or man.`,
 			cmdText, err := pickFromHistory(reader, offset, explicit)
 			if errors.Is(err, shellhist.ErrNoHistory) {
 				fmt.Fprintln(os.Stderr,
-					"warning: no shell history available; use 'cheatshh add' instead")
+					"warning: no shell history available; use 'postitt add' instead")
 				return err
 			}
 			if err != nil {
@@ -174,13 +174,13 @@ tldr (preferred) or man.`,
 	return cmd
 }
 
-// newPrintCmd: `cheatshh print` -> picker -> stdout.
+// newPrintCmd: `postitt print` -> picker -> stdout.
 func newPrintCmd(dbPath *string) *cobra.Command {
 	return &cobra.Command{
 		Use:   "print",
 		Short: "Pick a command and write it to stdout",
 		Long: `Open the picker and write the selected command to stdout, suitable
-for shell substitution: eval "$(cheatshh print)" or run "$(cheatshh print)".
+for shell substitution: eval "$(postitt print)" or run "$(postitt print)".
 
 Note: multi-line commands include embedded newlines; quote appropriately.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -194,7 +194,7 @@ Note: multi-line commands include embedded newlines; quote appropriately.`,
 	}
 }
 
-// newLsCmd: `cheatshh ls [--tag X]` -> plain text listing.
+// newLsCmd: `postitt ls [--tag X]` -> plain text listing.
 func newLsCmd(dbPath *string) *cobra.Command {
 	var tagFilter []string
 
@@ -236,7 +236,7 @@ func newLsCmd(dbPath *string) *cobra.Command {
 	return cmd
 }
 
-// newTagsCmd: `cheatshh tags` -> tag listing with counts.
+// newTagsCmd: `postitt tags` -> tag listing with counts.
 func newTagsCmd(dbPath *string) *cobra.Command {
 	return &cobra.Command{
 		Use:   "tags",
@@ -259,7 +259,7 @@ func newTagsCmd(dbPath *string) *cobra.Command {
 	}
 }
 
-// newTagCmd: `cheatshh tag ID +foo -bar` adjusts tags on a single command.
+// newTagCmd: `postitt tag ID +foo -bar` adjusts tags on a single command.
 func newTagCmd(dbPath *string) *cobra.Command {
 	return &cobra.Command{
 		Use:   "tag ID [+tag|-tag ...]",
@@ -268,7 +268,7 @@ func newTagCmd(dbPath *string) *cobra.Command {
 listed are left alone.
 
 Example:
-  cheatshh tag 47 +production -experimental`,
+  postitt tag 47 +production -experimental`,
 		Args: cobra.MinimumNArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			id, err := strconv.ParseInt(args[0], 10, 64)
@@ -305,7 +305,7 @@ Example:
 	}
 }
 
-// newEditCmd: `cheatshh edit ID` opens $EDITOR with a small TOML buffer.
+// newEditCmd: `postitt edit ID` opens $EDITOR with a small TOML buffer.
 func newEditCmd(dbPath *string) *cobra.Command {
 	return &cobra.Command{
 		Use:   "edit ID",
@@ -347,7 +347,7 @@ func newEditCmd(dbPath *string) *cobra.Command {
 	}
 }
 
-// newRmCmd: `cheatshh rm ID [-f]` deletes a command.
+// newRmCmd: `postitt rm ID [-f]` deletes a command.
 func newRmCmd(dbPath *string) *cobra.Command {
 	var force bool
 	cmd := &cobra.Command{
@@ -440,7 +440,7 @@ func editInEditor(c *store.Command) (*store.Command, error) {
 		editor = "vi"
 	}
 
-	tmpf, err := os.CreateTemp("", "cheatshh-edit-*.toml")
+	tmpf, err := os.CreateTemp("", "postitt-edit-*.toml")
 	if err != nil {
 		return nil, err
 	}
@@ -740,13 +740,13 @@ func firstWord(s string) string {
 //                   No filtering — the user asked for a specific position.
 //
 //   explicit=false: walk backward from the end and return the first entry
-//                   that is NOT a cheatshh invocation. This is the default
-//                   for `cheatshh save` with no args. We have to filter
-//                   because at least one cheatshh invocation (the save
+//                   that is NOT a postitt invocation. This is the default
+//                   for `postitt save` with no args. We have to filter
+//                   because at least one postitt invocation (the save
 //                   itself) is always present at the very end of history.
 //
 // We pull a generous batch from the reader (64 entries) and search within
-// that. If everything in the batch is a cheatshh invocation we fall back to
+// that. If everything in the batch is a postitt invocation we fall back to
 // returning the most recent entry as-is rather than refusing to save.
 //
 // Note: shellhist.Reader.Recent returns entries in chronological order
@@ -779,17 +779,17 @@ func pickFromHistory(reader shellhist.Reader, offset int, explicit bool) (string
 			return entries[i], nil
 		}
 	}
-	// Everything is cheatshh; fall back to the actual last entry rather
+	// Everything is postitt; fall back to the actual last entry rather
 	// than failing. This is unusual enough that a friendly warning is
 	// better than an error.
 	fmt.Fprintln(os.Stderr,
-		"warning: only cheatshh invocations in recent history; saving the last entry anyway")
+		"warning: only postitt invocations in recent history; saving the last entry anyway")
 	return entries[len(entries)-1], nil
 }
 
 // isCheatshhInvocation returns true if the given history entry looks like
-// a cheatshh command. We check the first program-word so things like
-// `sudo cheatshh ...` or `CHEATSHH_DB=foo cheatshh ...` are still caught.
+// a postitt command. We check the first program-word so things like
+// `sudo postitt ...` or `CHEATSHH_DB=foo postitt ...` are still caught.
 func isCheatshhInvocation(entry string) bool {
 	for _, f := range strings.Fields(entry) {
 		// Skip env var assignments.
@@ -804,12 +804,12 @@ func isCheatshhInvocation(entry string) bool {
 			continue
 		}
 		// First real token. Match either the bare name or any path ending
-		// in /cheatshh (./cheatshh, /usr/local/bin/cheatshh, etc.).
+		// in /postitt (./postitt, /usr/local/bin/postitt, etc.).
 		base := f
 		if idx := strings.LastIndex(f, "/"); idx >= 0 {
 			base = f[idx+1:]
 		}
-		return base == "cheatshh"
+		return base == "postitt"
 	}
 	return false
 }

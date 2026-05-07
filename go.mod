@@ -1,4 +1,4 @@
-module github.com/charlotte/cheatshh
+module github.com/LordHerdier/postitt-cli
 
 go 1.22
 

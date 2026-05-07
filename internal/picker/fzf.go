@@ -13,8 +13,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/charlotte/cheatshh/internal/pickerstate"
-	"github.com/charlotte/cheatshh/internal/store"
+	"github.com/LordHerdier/postitt-cli/internal/pickerstate"
+	"github.com/LordHerdier/postitt-cli/internal/store"
 )
 
 // Action is the post-selection action determined by which key the user
@@ -49,7 +49,7 @@ var ErrNoFzf = errors.New("fzf not found on $PATH (install fzf to use the picker
 const fieldSep = "\t"
 
 // Run opens fzf with the given list of commands. The returned Result describes
-// the action chosen; selfExec is the path to the cheatshh binary itself, used
+// the action chosen; selfExec is the path to the postitt binary itself, used
 // for the preview subprocess and for in-place bind actions (bookmark, delete).
 func Run(cmds []*store.Command, selfExec string) (*Result, error) {
 	if _, err := exec.LookPath("fzf"); err != nil {
@@ -130,7 +130,7 @@ func renderList(cmds []*store.Command) string {
 }
 
 // RenderListExternal is the exported version used by fzf's reload action
-// (via the hidden `cheatshh _list` subcommand). The output format must match
+// (via the hidden `postitt _list` subcommand). The output format must match
 // renderList exactly so that fzf's internal state stays consistent across
 // reloads.
 func RenderListExternal(cmds []*store.Command) string {
@@ -218,7 +218,7 @@ func buildFzfArgs(selfExec string) []string {
 		"--bind=" + bindTagFilter,
 		"--bind=" + bindClearFilter,
 		"--bind=" + bindMan,
-		"--prompt=cheatshh> ",
+		"--prompt=postitt> ",
 	}
 }
 
@@ -280,7 +280,7 @@ func parseFzfOutput(out string, cmds []*store.Command) (*Result, error) {
 
 // oneLine collapses a multi-line command to a single-line display, with a
 // marker indicating how many lines were elided. Mirrors the helper in
-// cmd/cheatshh/commands.go (kept duplicated to keep package boundaries
+// cmd/postitt/commands.go (kept duplicated to keep package boundaries
 // clean).
 func oneLine(s string) string {
 	if !strings.Contains(s, "\n") {
