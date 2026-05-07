@@ -4,11 +4,18 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
   };
-  outputs = { self, nixpkgs, flake-utils }:
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      flake-utils,
+    }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-      in {
+      in
+      {
         packages.default = pkgs.buildGoModule {
           pname = "cheatshh";
           version = "0.1.0";
@@ -25,7 +32,12 @@
           };
         };
         devShells.default = pkgs.mkShell {
-          buildInputs = with pkgs; [ go gopls gotools ];
+          buildInputs = with pkgs; [
+            go
+            gopls
+            gotools
+          ];
         };
-      });
+      }
+    );
 }
